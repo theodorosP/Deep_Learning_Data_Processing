@@ -1,5 +1,3 @@
-from keras.datasets import imdb
-
 class Dataset:
   #define constructor
   def __init__(self):
@@ -18,10 +16,8 @@ class Dataset:
     return result
 
   def one_hot_encode(self):
-    train_data = self.get_data()[0]
-    test_data = self.get_data()[2]
-    return self.diagonalize(train_data), self.diagonalize(test_data)
-
-obj = Dataset()
-train_data, train_label, test_data, test_label = obj.get_data()
-diag_train, diag_test = obj.one_hot_encode()
+    x_train = self.diagonalize( self.get_data()[0] )
+    x_test = self.diagonalize( self.get_data()[2] )
+    y_train = np.asarray( self.get_data()[1] )
+    y_test = np.asarray( self.get_data()[3] )
+    return x_train, x_test, y_train, y_test 
