@@ -1,3 +1,6 @@
+from keras.datasets import imdb
+import numpy as np
+
 class Dataset:
   #define constructor
   def __init__(self):
