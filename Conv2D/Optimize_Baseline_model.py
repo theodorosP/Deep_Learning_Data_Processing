@@ -1,4 +1,5 @@
-!pip install keras==2.12.0
+### do this in colab !pip install keras==2.12.0 ### 
+#alternatively, use the second part of the code
 import numpy as np
 from keras.layers import Conv2D, Dropout, Flatten, Dense
 from keras import layers, Sequential, models
@@ -72,3 +73,59 @@ class ImageProcess():
 
 obj = ImageProcess("mnist")
 obj.GridSearch( param_grid = { "num_of_filters" : [16, 32, 64], "drop_out_rate" : [0.1, 0.2, 0.3], "batch_size" : [32, 64, 128, 256, 512], "epochs" : [10, 20, 30, 40] } )
+
+
+
+#second part
+import numpy as np
+from keras.layers import Conv2D, Dropout, Flatten, Dense
+from keras import Sequential
+from keras.utils import to_categorical
+from scikeras.wrappers import KerasClassifier
+from sklearn.model_selection import GridSearchCV
+
+class ImageProcess():
+
+    def __init__(self, dataset_name):
+        dataset_module = getattr(__import__('keras.datasets', fromlist=[dataset_name]), dataset_name)
+        (self.train_images, self.train_labels), (self.test_images, self.test_labels) = dataset_module.load_data()
+        self.train_images, self.test_images = self.convert_data(self.train_images), self.convert_data(self.test_images)
+        self.train_labels, self.test_labels = to_categorical(self.train_labels), to_categorical(self.test_labels)
+
+    def convert_data(self, data):
+        return data.reshape(data.shape[0], data.shape[1], data.shape[2], 1).astype("float32") / 255
+
+    def baseline_model(self):
+        model = Sequential()
+        model.add(Conv2D(32, kernel_size=(3, 3), activation = "relu", input_shape = (self.train_images.shape[1], self.train_images.shape[2], 1)))
+        model.add(Dropout(0.1))
+        model.add(Flatten())
+        model.add(Dense(10, activation="softmax"))
+        model.compile(optimizer="rmsprop", loss="categorical_crossentropy", metrics=["accuracy"])
+        return model
+
+    def GridSearch(self):
+        X = self.train_images
+        Y = self.train_labels
+        print(X.shape)
+
+        # Define a function that returns the baseline model
+        def baseline_model_callable():
+            return self.baseline_model()
+
+        # Use the callable function when instantiating KerasClassifier
+        model = KerasClassifier(model = baseline_model_callable, verbose = True)
+
+        # Define the grid search parameters
+        batch_size = [ 10, 20, 40, 60, 80, 100 ]
+        epochs = [ 10, 50, 100 ]
+        param_grid = dict( batch_size = batch_size, epochs=epochs )
+
+        # Create GridSearchCV instance with KerasClassifier and parameter grid
+        grid = GridSearchCV( estimator = model, param_grid = param_grid, cv = 2 )
+
+        # Fit the grid search
+        grid_result = grid.fit(X, Y)
+
+obj = ImageProcess("mnist")
+obj.GridSearch()
