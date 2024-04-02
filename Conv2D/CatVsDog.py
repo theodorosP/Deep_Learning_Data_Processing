@@ -1,13 +1,19 @@
 import os
 import shutil
 import random as random
+from keras import optimizers
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from keras import layers, Sequential, models
+from keras.preprocessing.image import ImageDataGenerator
 
 
 class CatVsDogs():
     #define constructor
     def __init__(self):
+        self.train_dir = "/content/drive/MyDrive/dogs-vs-cats/train"
+        self.test_dir = "/content/drive/MyDrive/dogs-vs-cats/test"
+        self.train_generator, self.test_generator = self.generators()
         self.data_dir = "/content/drive/MyDrive/dogs-vs-cats/train/train/"
         self.cat_dog_dir = "/content/drive/MyDrive/dogs-vs-cats/"
         self.val_ratio = 0.25
@@ -72,13 +78,35 @@ class CatVsDogs():
         print("File ", i, " copied at: ", destination_dir)
         print("---" * 10)
 
-    def clean_dirs( self ):
-      for i in [ "train", "test"]:
+    def check_data( self ):
+      for i in ["train", "test"]:
         for j in ["cats", "dogs"]:
-          os.listdir("/content/drive/MyDrive/dogs-vs-cats/" + i  + "/"  + j)
+          print("/content/drive/MyDrive/dogs-vs-cats/" + i + "/" + j)
+          print("----" * 10)
+          for k in os.listdir("/content/drive/MyDrive/dogs-vs-cats/" + i + "/" + j):
+            print( k )
+
+    def generators( self ):
+      train_datagen = ImageDataGenerator( rescale = 1./255)
+      test_datagen = ImageDataGenerator( rescale = 1./255)
+      train_generator = train_datagen.flow_from_directory( self.train_dir, target_size = (150, 150), batch_size = 30, class_mode = "binary", classes = ["cats", "dogs"])
+      test_generator = test_datagen.flow_from_directory( self.test_dir,  target_size = (150, 150), batch_size = 20, class_mode = "binary", classes = ["cats", "dogs"] )
+      return train_generator, test_generator
+
+    def baseline_model( self ):
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, (3, 3), activation = "relu", input_shape = (150, 150, 3) ) )
+      model.add( layers.MaxPooling2D(2, 2))
+      model.add( layers.Flatten() )
+      model.add( layers.Dense( 128, activation = "relu") )
+      model.add( layers.Dense(1, activation = "sigmoid") )
+      model.compile( loss = "binary_crossentropy", optimizer = optimizers.RMSprop( learning_rate = 0.0001 ) )
+      history = model.fit( self.train_generator, steps_per_epoch = 50, epochs = 2, validation_data = self.test_generator, validation_steps = 50)
+      return model 
 
 obj = CatVsDogs()
 #obj.visualize_pics("cat", 0, 9 ) #this works
 #obj.make_folders() #this works
-#obj.copy_images()
-obj.copy_images()
+#obj.copy_images() #this works
+#obj.check_data() #this works
+obj.baseline_model()
