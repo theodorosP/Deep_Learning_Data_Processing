@@ -1,3 +1,4 @@
+from multiprocessing import Value
 import os
 import shutil
 import random as random
@@ -11,12 +12,14 @@ from keras.preprocessing.image import ImageDataGenerator
 class CatVsDogs():
     #define constructor
     def __init__(self):
-        self.train_dir = "/content/drive/MyDrive/dogs-vs-cats/train"
-        self.test_dir = "/content/drive/MyDrive/dogs-vs-cats/test"
-        self.train_generator, self.test_generator = self.generators()
-        self.data_dir = "/content/drive/MyDrive/dogs-vs-cats/train/train/"
+        self.train_dir = "/content/drive/MyDrive/dogs-vs-cats/train/"
+        self.test_dir = "/content/drive/MyDrive/dogs-vs-cats/test/"
+        self.validation_dir = "/content/drive/MyDrive/dogs-vs-cats/validation/"
+        #self.train_generator, self.test_generator = self.generators()
+        self.data_dir = "/content/drive/MyDrive/dogs-vs-cats/data/"
         self.cat_dog_dir = "/content/drive/MyDrive/dogs-vs-cats/"
-        self.val_ratio = 0.25
+        self.val_ratio = 0.2
+        self.test_ratio = 0.25
 
     #name is either cat or dog
     #start_index and end_index are the indexes of picures we want to visualize
@@ -26,6 +29,7 @@ class CatVsDogs():
             for i in range( start_index, end_index ):
               plt.subplot( 330  + i - start_index + 1  )
               filename = self.data_dir + name.lower() + "." + str( i ) + ".jpg"
+              print("Reading file:", filename )
               image = mpimg.imread( filename )
               plt.imshow( image )
             plt.show()
@@ -33,6 +37,7 @@ class CatVsDogs():
             raise ValueError( "You are allowed to visualize up to 9 images" )
         except Exception as e:
           print("An error occured", e)
+
 
     #name should be either cat or dog
     def visualize_pics( self, name, start_index, end_index ):
@@ -46,11 +51,12 @@ class CatVsDogs():
         except Exception as e:
             print("An error occurred:", e)
 
+
     #make the folders for training and testing
     def make_folders( self ):
-      train_test = [ "train/", "test/" ]
+      train_test_validation = [ "train/", "test/", "validation/" ]
       dogs_cats = [ "dogs/", "cats/" ]
-      for i in train_test:
+      for i in train_test_validation:
         for j in dogs_cats:
           new_dir = self.cat_dog_dir + i + j
           if os.path.exists( new_dir ):
@@ -58,33 +64,77 @@ class CatVsDogs():
           else:
             os.makedirs( new_dir )
 
-    #copy the images to train and test directory, 25% will be kept for testing
-    def copy_images( self ):
-      random.seed( 1 )
-      train_dir = "/content/drive/MyDrive/dogs-vs-cats/train"
-      test_dir = "/content/drive/MyDrive/dogs-vs-cats/test"
-      for i in os.listdir( self.data_dir ):
-        destination_dir = train_dir
-        if random.random() < self.val_ratio:
-          destination_dir = test_dir
-        if i.startswith( "cat" ):
-          file_to_copy = self.data_dir + i
-          destination_dir = destination_dir + "/cats"
-        elif i.startswith( "dog" ):
-          file_to_copy = self.data_dir + i
-          destination_dir = destination_dir + "/dogs"
-        os.system( "cp " + file_to_copy + " " + destination_dir)
-        #shutil.copyfile( file_to_copy, destination_dir)
-        print("File ", i, " copied at: ", destination_dir)
-        print("---" * 10)
+    def get_training_test_validation_lists( self, train_test_or_validation ):
+      try:
+        if train_test_or_validation.lower() == "train_test":
+          files = os.listdir( self.data_dir )
+          data_length = int( len(files) / 2 )
+          test_images = list()
+          random.seed( 1 )
+          for i in range( 0, data_length ):
+            random_number = random.random()
+            if random_number <= self.test_ratio:
+              test_images.append( i )
+          train_images = [ i for i in range(0, data_length) if i not in test_images ]
+          return train_images, test_images
+        elif train_test_or_validation.lower() == "validation":
+          files = os.listdir( self.train_dir  + "dogs" )
+          validation_images = list()
+          random.seed( 1 )
+          for i in range( 0, len( files ) ):
+            random_number = random.random()
+            if random_number < self.val_ratio:
+              validation_images.append( i )
+          return validation_images
+        else:
+           raise ValueError("The train_test_or_validation can take values train_test, if you are attempting to coppy train_test data or validation if you are trying to copy validation data!")
+      except Exception as e:
+        print("An error occured:", e)
+
+    def copy_to_path( self, image_index_list, train_or_test_or_validation ):
+      try:
+        if train_or_test_or_validation.lower() == "test":
+          dogs_destination = self.test_dir + "dogs/"
+          cats_destination = self.test_dir + "cats/"
+        elif train_or_test_or_validation.lower() == "train":
+          dogs_destination = self.train_dir + "dogs/"
+          cats_destination = self.train_dir + "cats/"
+        elif train_or_test_or_validation.lower() == "validation":
+          dogs_destination = self.validation_dir + "dogs/"
+          cats_destination = self.validation_dir + "cats/"
+        else:
+          raise ValueError("The train_or_test_or_validation should be either train or test or validation.")
+      except Exception as e:
+        print("An error occured:", e)
+      for i in image_index_list:
+        dog_image = "dog." + str(i) + ".jpg"
+        cat_image = "cat." + str(i) + ".jpg"
+        for j in [ dog_image, cat_image ]:
+          if j == dog_image and os.path.exists( dogs_destination + j):
+            print( "File:",  dogs_destination + j, "exists")
+          elif j == dog_image and os.path.exists( dogs_destination + j) == False:
+            print("File:",  dogs_destination +  j, " NOT exists")
+            os.system("cp " +  self.data_dir + dog_image + " " + dogs_destination)
+            print( dog_image, "coppied to:", dogs_destination )
+          elif j == cat_image and os.path.exists( cats_destination + j):
+            print( "File:",  cats_destination + j, "exists")
+          elif j == cat_image and os.path.exists( cats_destination + j) == False :
+             os.system("cp " +  self.data_dir + cat_image + " " + cats_destination)
+             print( cat_image, "coppied to:", cats_destination )
+
+    def copy_images_to_train_test( self ):
+      train_images, test_images = self.get_training_test_validation_lists( "train_test" )
+      validation_images = self.get_training_test_validation_lists( "validation" )
+      self.copy_to_path( test_images, "test" )
+      self.copy_to_path( train_images, "train" )
+      self.copy_to_path( validation_images, "validation" )
 
     def check_data( self ):
       for i in ["train", "test"]:
         for j in ["cats", "dogs"]:
-          print("/content/drive/MyDrive/dogs-vs-cats/" + i + "/" + j)
           print("----" * 10)
-          for k in os.listdir("/content/drive/MyDrive/dogs-vs-cats/" + i + "/" + j):
-            print( k )
+          files = os.listdir( "/content/drive/MyDrive/dogs-vs-cats/" + i + "/" + j )
+          print(i, j, len( files ))
 
     def generators( self ):
       train_datagen = ImageDataGenerator( rescale = 1./255)
@@ -101,12 +151,20 @@ class CatVsDogs():
       model.add( layers.Dense( 128, activation = "relu") )
       model.add( layers.Dense(1, activation = "sigmoid") )
       model.compile( loss = "binary_crossentropy", optimizer = optimizers.RMSprop( learning_rate = 0.0001 ) )
-      history = model.fit( self.train_generator, steps_per_epoch = 50, epochs = 2, validation_data = self.test_generator, validation_steps = 50)
-      return model 
+      history = model.fit( self.train_generator, steps_per_epoch = 50, epochs = 2, validation_data = self.test_generator, validation_steps = 50) #need to fix this with the validation data
+      results = model.evaluate( self.test_generator )
+      print("history = ", history.history)
+      print("results = ", results )
+      return model
+
 
 obj = CatVsDogs()
-#obj.visualize_pics("cat", 0, 9 ) #this works
+#for i in ["cat", "dog"]:
+#  obj.visualize_pics( i, 0, 9  ) #this works
 #obj.make_folders() #this works
-#obj.copy_images() #this works
+#a, b = obj.get_training_test_validation_lists( "train_test" ) #this works
+#c = obj.get_training_test_validation_lists( "validation" )
+#obj.copy_images_to_train_test()
+#obj.make_validation_folder()
 #obj.check_data() #this works
-obj.baseline_model()
+#obj.baseline_model()
