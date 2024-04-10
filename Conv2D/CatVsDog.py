@@ -177,6 +177,6 @@ obj = CatVsDogs()
 #obj.make_folders() #this works
 ###a, b = obj.get_training_test_validation_lists( "train_test" ) #this works
 ###c = obj.get_training_test_validation_lists( "validation" ) #this works
-#obj.copy_images_to_train_test_validation() #this works
+obj.copy_images_to_train_test_validation() #this works
 #obj.check_data() #this works
 #obj.baseline_model()
