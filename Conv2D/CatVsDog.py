@@ -5,6 +5,7 @@ import random as random
 from keras import optimizers
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from keras.callbacks import EarlyStopping
 from keras import layers, Sequential, models
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -14,7 +15,7 @@ class CatVsDogs():
         self.train_dir = "/content/drive/MyDrive/dogs-vs-cats/train/"
         self.test_dir = "/content/drive/MyDrive/dogs-vs-cats/test/"
         self.validation_dir = "/content/drive/MyDrive/dogs-vs-cats/validation/"
-        #self.train_generator, self.test_generator, self.validation_generator = self.generators()
+        self.train_generator, self.test_generator, self.validation_generator = self.generators()
         self.data_dir = "/content/drive/MyDrive/dogs-vs-cats/data/"
         self.cat_dog_dir = "/content/drive/MyDrive/dogs-vs-cats/"
         self.val_ratio = 0.2
@@ -122,7 +123,7 @@ class CatVsDogs():
 
     def copy_images_to_train_test_validation( self ):
       train_images, test_images = self.get_training_test_validation_lists( "train_test" )
-      self.copy_to_path( test_images, "test" ) #keep the order training directory has to be completed before moving to validation 
+      self.copy_to_path( test_images, "test" ) #keep the order training directory has to be completed before moving to validation
       self.copy_to_path( train_images, "train" ) #keep the order
       validation_images = self.get_training_test_validation_lists( "validation" )
       self.copy_to_path( validation_images, "validation" )
@@ -151,25 +152,52 @@ class CatVsDogs():
     def generators( self ):
       train_datagen = ImageDataGenerator( rescale = 1./255 )
       test_datagen = ImageDataGenerator( rescale = 1./255 )
-      validation_datagen = ImageDataGenerator( rescale = 1/.255 )
+      validation_datagen = ImageDataGenerator( rescale = 1./255 )
       train_generator = train_datagen.flow_from_directory( self.train_dir, target_size = (150, 150), batch_size = 20, class_mode = "binary", classes = ["cats", "dogs"] )
       test_generator = test_datagen.flow_from_directory( self.test_dir, target_size = (150, 150), batch_size = 20, class_mode = "binary", classes = ["cats", "dogs"] )
       validation_generator = validation_datagen.flow_from_directory( self.validation_dir,  target_size = (150, 150), batch_size = 20, class_mode = "binary", classes = ["cats", "dogs"] )
       return train_generator, test_generator, validation_generator
+    
+    def plot( self, history, key_word ):
+      try:
+        if key_word.lower() == "loss":
+          plt.plot( range( 1, len( history.history[ "loss" ] ) + 1 ),  history.history[ "loss" ], "-o", label = "Loss" )
+          plt.plot( range( 1, len( history.history[ "val_loss" ] ) + 1 ),  history.history[ "val_loss" ], "-o", label = "Val_Loss" )
+          plt.xlabel( "epochs" )
+          plt.ylabel( "Loss" )
+          plt.legend( loc = "best" )
+          plt.show()
+        elif key_word.lower() == "accuracy":
+          plt.plot( range( 1, len( history.history[ "accuracy" ] ) + 1 ),  history.history[ "accuracy" ], "-o", label = "Accuracy" )
+          plt.plot( range( 1, len( history.history[ "val_accuracy" ] ) + 1 ),  history.history[ "val_accuracy" ], "-o", label = "Val_Accuracy" )
+          plt.xlabel( "epochs" )
+          plt.ylabel( "Accuracy" )
+          plt.legend( loc = "best" )
+          plt.show()
+        else:
+          raise ValueError("The key word can either be loss or accuracy.")
+      except exception as e:
+        print("An error occured:", e)
 
     def baseline_model( self ):
       model = models.Sequential()
-      model.add( layers.Conv2D( 32, (3, 3), activation = "relu", input_shape = (150, 150, 3) ) )
-      model.add( layers.MaxPooling2D(2, 2))
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = ( 150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ))
       model.add( layers.Flatten() )
       model.add( layers.Dense( 128, activation = "relu") )
-      model.add( layers.Dense(1, activation = "sigmoid") )
-      model.compile( loss = "binary_crossentropy", optimizer = optimizers.RMSprop( learning_rate = 0.0001 ) )
-      history = model.fit( self.train_generator, steps_per_epoch = 50, epochs = 2, validation_data = self.test_generator, validation_steps = 50)
+      model.add( layers.Dense( 1, activation = "sigmoid") )
+      model.compile( loss = "binary_crossentropy", optimizer = optimizers.RMSprop( learning_rate = 0.0001 ), metrics = [ "accuracy" ] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 40, validation_data = self.validation_generator, validation_steps = 50, callbacks = [early_stopping])
       results = model.evaluate( self.test_generator )
-      print("history = ", history.history)
-      print("results = ", results )
-      return model
+      print( "history = ", history.history )
+      print( "results = ", results )
+      loss, accuracy = results[ 0 ], results[ 1 ]
+      ratio = round( results[ 0 ] / history.history[ "loss" ][ -1 ], 2 )
+      print( "test_loss/training_loss = ",  ratio )
+      for i in [ "loss", "accuracy" ]:
+        self.plot( history, i )
+      return model, history, results
 
 obj = CatVsDogs()
 #for i in ["cat", "dog"]:
@@ -177,6 +205,6 @@ obj = CatVsDogs()
 #obj.make_folders() #this works
 ###a, b = obj.get_training_test_validation_lists( "train_test" ) #this works
 ###c = obj.get_training_test_validation_lists( "validation" ) #this works
-obj.copy_images_to_train_test_validation() #this works
+#obj.copy_images_to_train_test_validation() #this works
 #obj.check_data() #this works
-#obj.baseline_model()
+model, history, results = obj.baseline_model()
