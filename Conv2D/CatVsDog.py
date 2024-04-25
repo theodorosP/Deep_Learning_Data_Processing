@@ -179,6 +179,14 @@ class CatVsDogs():
       except exception as e:
         print("An error occured:", e)
 
+    def print_and_plot( self, history, results):
+      print("history =", history )
+      print("resukts =", results )
+      loss, accuracy = results[ 0 ], results[ 1 ]
+      ratio = round( results[ 0 ] / history.history[ "loss" ][ -1 ], 2 )
+      print( "test_loss/training_loss = ",  ratio )
+      for i in [ "loss", "accuracy" ]:
+        self.plot( history, i )
 
     def baseline_model( self ):
       random.seed(1)
@@ -193,26 +201,64 @@ class CatVsDogs():
       history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 40, validation_data = self.validation_generator, validation_steps = 50, callbacks = [early_stopping])
       results = model.evaluate( self.test_generator )
       self.print_and_plot( history, results )
-      #print( "history = ", history.history )
-      #print( "results = ", results )
-      #loss, accuracy = results[ 0 ], results[ 1 ]
-      #ratio = round( results[ 0 ] / history.history[ "loss" ][ -1 ], 2 )
-      #print( "test_loss/training_loss = ",  ratio )
-      #for i in [ "loss", "accuracy" ]:
-      #  self.plot( history, i )
       return model, history, results
 
-    def print_and_plot( self, history, results):
-      print("history =", history )
-      print("resukts =", results )
-      loss, accuracy = results[ 0 ], results[ 1 ]
-      ratio = round( results[ 0 ] / history.history[ "loss" ][ -1 ], 2 )
-      print( "test_loss/training_loss = ",  ratio )
-      for i in [ "loss", "accuracy" ]:
-        self.plot( history, i )
-
-
     def second_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add(layers.Dense( 128, activation = "relu") )
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
+      return model, history, results
+
+    def third_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Conv2D( 128, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add(layers.Dense( 128, activation = "relu") )
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
+      return model, history, results
+
+    def fourth_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Conv2D( 128, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add(layers.Dense( 512, activation = "relu") ) #increase from 128
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
+      return model, history, results
+
+    def fifth_model( self ):
       random.seed(1)
       model = models.Sequential()
       model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
@@ -223,19 +269,78 @@ class CatVsDogs():
       model.add( layers.MaxPooling2D( 2, 2)  )
       model.add( layers.Flatten() )
       model.add(layers.Dense( 512, activation = "relu") )
+      model.add(layers.Dense( 128, activation = "relu") )
       model.add( layers.Dense( 1, activation = "sigmoid" ) )
       model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
       early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
       history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
       results = model.evaluate( self.test_generator )
       self.print_and_plot( history, results )
-      #print("history =", history )
-      #print("resukts =", results )
-      #loss, accuracy = results[ 0 ], results[ 1 ]
-      #ratio = round( results[ 0 ] / history.history[ "loss" ][ -1 ], 2 )
-      #print( "test_loss/training_loss = ",  ratio )
-      #for i in [ "loss", "accuracy" ]:
-      #  self.plot( history, i )
+      return model, history, results
+
+    def sixth_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Conv2D( 128, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add(layers.Dense( 512, activation = "relu") )
+      model.add(layers.Dense( 128, activation = "relu") )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
+      return model, history, results
+
+    def seventh_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Conv2D( 128, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add(layers.Dense( 512, activation = "relu") )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
+      return model, history, results
+
+    def eighth_model( self ):
+      random.seed(1)
+      model = models.Sequential()
+      model.add( layers.Conv2D( 32, ( 3, 3 ), activation = "relu", input_shape = (150, 150, 3 ) ) )
+      model.add( layers.MaxPooling2D( 2, 2 ) )
+      model.add( layers.Conv2D( 64, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Conv2D( 128, (3, 3), activation = "relu") )
+      model.add( layers.MaxPooling2D( 2, 2)  )
+      model.add( layers.Flatten() )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add(layers.Dense( 512, activation = "relu") )
+      model.add(layers.Dense( 128, activation = "relu") )
+      model.add( layers.Dropout( 0.5 ) )
+      model.add( layers.Dense( 1, activation = "sigmoid" ) )
+      model.compile( loss = "binary_crossentropy", optimizer =  optimizers.RMSprop( learning_rate = 0.0001 ), metrics = ["accuracy"] )
+      early_stopping = EarlyStopping( monitor='val_loss', patience = 3 , restore_best_weights = True )
+      history = model.fit( self.train_generator, batch_size = 150, steps_per_epoch = 50, epochs = 20, validation_data = self.validation_generator, validation_steps = 50, callbacks = early_stopping )
+      results = model.evaluate( self.test_generator )
+      self.print_and_plot( history, results )
       return model, history, results
 
 obj = CatVsDogs()
@@ -247,4 +352,10 @@ obj = CatVsDogs()
 #obj.copy_images_to_train_test_validation() #this works
 #obj.check_data() #this works
 model, history, results = obj.baseline_model() #this works
-#model, history, results = obj.second_model() #this works
+model, history, results = obj.second_model()
+model, history, results = obj.third_model()
+model, history, results = obj.fourth_model()
+model, history, results = obj.fifth_model()
+model, history, results = obj.sixth_model()
+model, history, results = obj.seventh_model()
+model, history, results = obj.eighth_model()
